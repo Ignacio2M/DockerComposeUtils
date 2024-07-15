@@ -1,0 +1,28 @@
+# docker pull python:3.12.4
+version: "3.1"
+
+services:
+  app1:
+    image: myimage
+    container_name: app1
+    restart: always
+    ports:
+      - 80:80 
+    environment:
+      - PORT=80
+
+  app2:
+    image: myimage
+    container_name: app2
+    restart: always
+    ports:
+      - 81:80 
+    environment:
+      - PORT=81
+
+  elb:
+    image: haproxy:alpine3.20
+    ports:
+        - "8100:8100"
+    volumes:
+        - ./haproxy:/usr/local/etc/haproxy
