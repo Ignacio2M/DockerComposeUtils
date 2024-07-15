@@ -1,0 +1,69 @@
+version: "3.1"
+
+services:
+
+  mongo-primary:
+    image: mongodb/mongodb-community-server:7.0.11-ubuntu2204
+    container_name: mongo-primary
+    restart: always
+    command: mongod --replSet rs0 --port 27017 --bind_ip_all 
+    ports:
+      - 27017:27017 
+    volumes:
+      - './data/mongodb_data_1:/data/db'
+      - './data/mongodb_config_1:/data/configdb'
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      mongo-cluster:
+        ipv4_address: 172.21.0.3
+
+  mongo-secondary1:
+    image: mongodb/mongodb-community-server:7.0.11-ubuntu2204
+    container_name: mongo-secondary1
+    restart: always
+    command: mongod --replSet rs0 --port 27017 --bind_ip_all
+    ports:
+      - 27018:27017
+    volumes:
+      - './data/mongodb_data_2:/data/db'
+      - './data/mongodb_config_2:/data/configdb'
+
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      mongo-cluster:
+        ipv4_address: 172.21.0.4
+
+  mongo-secondary2:
+    image: mongodb/mongodb-community-server:7.0.11-ubuntu2204
+    container_name: mongo-secondary2
+    restart: always
+    command: mongod --replSet rs0 --port 27017 --bind_ip_all
+    ports:
+      - 27019:27017
+    volumes:
+      - './data/mongodb_data_3:/data/db'
+      - './data/mongodb_config_3:/data/configdb'
+
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      mongo-cluster:
+        ipv4_address: 172.21.0.2
+
+networks:
+  mongo-cluster:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
