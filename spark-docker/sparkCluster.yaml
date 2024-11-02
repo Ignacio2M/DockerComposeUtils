@@ -1,0 +1,91 @@
+
+services:
+  sparkMaster:
+    container_name: master
+    image: apache/spark:3.4.4-scala2.12-java11-python3-ubuntu
+    ports:
+      - "7077:7077"
+      # - "8181:8080"
+    environment:
+      SPARK_NO_DAEMONIZE: true
+    networks:
+      sparkNet:
+        ipv4_address: 172.16.238.10
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2GB
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    command: /opt/spark/sbin/start-master.sh -h 0.0.0.0
+
+
+  sparkWorker:
+    # container_name: worker
+    image: apache/spark:3.4.4-scala2.12-java11-python3-ubuntu
+    volumes:
+      - sparkFiles:/opt/spark
+    depends_on:
+      - sparkMaster
+    # ports:
+    #   - "8081:8081"
+    networks:
+      - sparkNet
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2GB
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPARK_NO_DAEMONIZE: true
+    command: /opt/spark/sbin/start-slave.sh spark://172.16.238.10:7077
+
+
+  zeppelin:
+    image: apache/zeppelin:0.11.2
+    depends_on:
+      - sparkMaster
+    ports:
+      - "8080:8080"
+    volumes:
+      - sparkFiles:/opt/spark
+      - ./spark:/zeppelin/spark
+      - ./notebooks:/zeppelin/notebook
+    environment:
+      - "MASTER=spark://172.16.238.10:7077"
+      - "SPARK_MASTER=spark://172.16.238.10:7077"
+      - "SPARK_HOME=/opt/spark"
+    networks:
+      sparkNet:
+        ipv4_address: 172.16.238.11
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2GB
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+
+networks:
+  sparkNet:
+    ipam:
+      config:
+        - subnet: "172.16.238.0/24"
+
+
+volumes:
+  sparkFiles:
